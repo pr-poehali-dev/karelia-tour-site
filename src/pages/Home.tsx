@@ -1,17 +1,24 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { Link } from 'react-router-dom';
-
-const photos = [
-  { id: 1, url: 'https://cdn.poehali.dev/projects/e6fc9b3e-e112-486b-b53f-04c5e20b89fa/files/0cc32477-021d-4944-8e18-528ad79c06f7.jpg', title: 'Гостевой дом зимой' },
-  { id: 2, url: 'https://cdn.poehali.dev/projects/e6fc9b3e-e112-486b-b53f-04c5e20b89fa/files/c7638944-0617-4b37-b3d1-8afcf4214338.jpg', title: 'Озеро Кончезеро' },
-  { id: 3, url: 'https://00.img.avito.st/image/1/1.3750z7a5c1dCePFaRrCJiWJtcVHKbvFBQmNxVcZ6d1U.snTM3FgxfzQjAxuj4zL1A_sz5h0FUlP0pkW1G2V2gSk', title: 'Вид на дом' },
-];
+import { getPhotos, getNews } from '@/lib/storage';
 
 export default function Home() {
+  const [randomPhotos, setRandomPhotos] = useState<any[]>([]);
+  const [latestNews, setLatestNews] = useState<any[]>([]);
+
+  useEffect(() => {
+    const allPhotos = getPhotos();
+    const shuffled = [...allPhotos].sort(() => 0.5 - Math.random());
+    setRandomPhotos(shuffled.slice(0, 3));
+
+    const allNews = getNews();
+    setLatestNews(allNews.slice(0, 4));
+  }, []);
   return (
     <div>
       <section className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
@@ -43,7 +50,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">Фотогалерея</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {photos.map((photo) => (
+            {randomPhotos.map((photo) => (
               <Card key={photo.id} className="overflow-hidden hover-scale">
                 <img 
                   src={photo.url} 
@@ -63,6 +70,39 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {latestNews.length > 0 && (
+        <section className="py-12 bg-white">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-8">Последние новости</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+              {latestNews.map((item) => (
+                <Card key={item.id} className="overflow-hidden hover-scale">
+                  <img 
+                    src={item.image} 
+                    alt={item.title} 
+                    className="w-full h-48 object-cover"
+                  />
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                      <span>{item.category}</span>
+                      <span>•</span>
+                      <span>{item.date}</span>
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{item.content.replace(/<[^>]*>/g, '')}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="text-center mt-8">
+              <Link to="/news">
+                <Button variant="outline">Все новости</Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
