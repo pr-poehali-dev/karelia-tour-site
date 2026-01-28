@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginDialog from './LoginDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { path: '/', label: 'Главная' },
@@ -16,7 +20,22 @@ const navItems = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const location = useLocation();
+  const { isAdmin, logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleAuthClick = () => {
+    if (isAdmin) {
+      logout();
+      toast({
+        title: 'Выход выполнен',
+        description: 'Вы вышли из режима администратора',
+      });
+    } else {
+      setLoginOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -106,20 +125,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </a>
             </div>
             
-            <div className="text-sm text-center">
+            <div className="text-sm text-center flex flex-col gap-2">
               <p>&copy; 2025 Дом в Кончезеро. Все права защищены.</p>
+              {isAdmin && (
+                <Badge variant="secondary" className="justify-center">
+                  <Icon name="Shield" size={14} className="mr-1" />
+                  Режим администратора
+                </Badge>
+              )}
             </div>
             
             <Button 
               variant="ghost" 
               size="sm"
               className="text-secondary-foreground hover:text-accent"
+              onClick={handleAuthClick}
             >
-              Вход
+              {isAdmin ? 'Выход' : 'Вход'}
             </Button>
           </div>
         </div>
       </footer>
+      <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
     </div>
   );
 }
