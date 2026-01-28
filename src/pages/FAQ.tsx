@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
 
 const faqs = [
   {
@@ -58,6 +60,55 @@ const comments = [
 ];
 
 export default function FAQ() {
+  const [name, setName] = useState('');
+  const [question, setQuestion] = useState('');
+  const [sending, setSending] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/ae5d3dec-aa78-4163-8fb4-6ad4e945dc04', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name, 
+          contact: '',
+          message: `Вопрос из раздела FAQ:\n${question}` 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast({
+          title: 'Вопрос отправлен',
+          description: 'Мы ответим вам в ближайшее время',
+        });
+        setName('');
+        setQuestion('');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: data.error || 'Не удалось отправить вопрос',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось отправить вопрос',
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="py-12 bg-muted/20 min-h-screen">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -115,12 +166,18 @@ export default function FAQ() {
           <Card>
             <CardContent className="p-6">
               <h2 className="text-2xl font-bold mb-6">Задать вопрос</h2>
-              <form className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Ваше имя
                   </label>
-                  <Input placeholder="Как вас зовут?" />
+                  <Input 
+                    placeholder="Как вас зовут?" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    disabled={sending}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -129,14 +186,18 @@ export default function FAQ() {
                   <Textarea 
                     placeholder="Напишите ваш вопрос..." 
                     rows={4}
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    required
+                    disabled={sending}
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={sending}>
                   <Icon name="Send" className="mr-2" size={18} />
-                  Отправить
+                  {sending ? 'Отправка...' : 'Отправить'}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Ваше сообщение будет опубликовано после модерации
+                  Ваше сообщение будет отправлено администратору
                 </p>
               </form>
             </CardContent>

@@ -6,10 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { Link } from 'react-router-dom';
 import { getPhotos, getNews } from '@/lib/storage';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [randomPhotos, setRandomPhotos] = useState<any[]>([]);
   const [latestNews, setLatestNews] = useState<any[]>([]);
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const allPhotos = getPhotos();
@@ -19,6 +25,47 @@ export default function Home() {
     const allNews = getNews();
     setLatestNews(allNews.slice(0, 4));
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/ae5d3dec-aa78-4163-8fb4-6ad4e945dc04', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, contact, message }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast({
+          title: 'Сообщение отправлено',
+          description: 'Мы свяжемся с вами в ближайшее время',
+        });
+        setName('');
+        setContact('');
+        setMessage('');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: data.error || 'Не удалось отправить сообщение',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось отправить сообщение',
+      });
+    } finally {
+      setSending(false);
+    }
+  };
   return (
     <div>
       <section className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
@@ -175,22 +222,40 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center mb-8">Обратная связь</h2>
           <Card>
             <CardContent className="p-6">
-              <form className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Ваше имя</label>
-                  <Input placeholder="Иван Петров" />
+                  <Input 
+                    placeholder="Иван Петров" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    disabled={sending}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Email или телефон</label>
-                  <Input placeholder="ivan@example.com" />
+                  <Input 
+                    placeholder="ivan@example.com" 
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    disabled={sending}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Сообщение</label>
-                  <Textarea placeholder="Ваш вопрос или комментарий..." rows={5} />
+                  <Textarea 
+                    placeholder="Ваш вопрос или комментарий..." 
+                    rows={5}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    required
+                    disabled={sending}
+                  />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={sending}>
                   <Icon name="Send" className="mr-2" size={18} />
-                  Отправить
+                  {sending ? 'Отправка...' : 'Отправить'}
                 </Button>
               </form>
             </CardContent>
